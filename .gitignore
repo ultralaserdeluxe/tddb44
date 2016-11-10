@@ -1,3 +1,7 @@
+# Project specific
+src/scan/scanner
+src/scan/scanner.cc
+
 # Object files
 *.o
 *.ko
