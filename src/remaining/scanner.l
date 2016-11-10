@@ -24,6 +24,7 @@ extern YYLTYPE yylloc; // Used for position information, see below.
 /* If you want to include any flex declarations, this is where to do it. */
 
 %x c_comment
+%x diesel_comment
 DIGIT [0-9]
 /* {DIGIT}+"."{DIGIT}*
  ID [a-z][a-z0-9]* */
@@ -291,6 +292,28 @@ procedure                {
                          }
 }
 
+"{"                    {
+                            column += yyleng;
+                            BEGIN(diesel_comment);
+                         }
+<diesel_comment>
+{
+    "}"                {
+                            column += 1;
+                            BEGIN(INITIAL);
+                         }
+    "{"                {
+                            column += 1;
+                            yyerror("Suspicious comment");
+                         }
+    [^\n]                column++; /* Skip stuff in comments */
+    \n                   column = 0;
+    <<EOF>>              {
+                            yyerror("Unterminated comment");
+                            yyterminate();
+                         }
+}
+
 '.*'                     {
                             yylloc.first_line = yylineno;
                             yylloc.first_column = column;
@@ -307,7 +330,15 @@ procedure                {
                             return T_IDENT;
                          }
 
-[0-9]*\.[0-9]*           {
+[0-9]*\.[0-9]+([eE][-+]?[0-9]+)?           {
+                            yylloc.first_line = yylineno;
+                            yylloc.first_column = column;
+                            column += yyleng;
+			    yylval.rval = atof(yytext);
+                            return T_REALNUM;
+                         }
+
+[0-9]+(\.|[eE][-+]?[0-9]+)           {
                             yylloc.first_line = yylineno;
                             yylloc.first_column = column;
                             column += yyleng;
@@ -323,7 +354,12 @@ procedure                {
                             return T_INTNUM;
                          }
 
-[[:space:]]              {
+\n                       {
+  column = 0;
+}
+
+[ ]              {
+  column += 1;
                          }
 
 <<EOF>>                  yyterminate();
