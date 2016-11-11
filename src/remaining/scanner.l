@@ -292,17 +292,17 @@ procedure                {
                          }
 }
 
-"{"                    {
+"{"                      {
                             column += yyleng;
                             BEGIN(diesel_comment);
                          }
 <diesel_comment>
 {
-    "}"                {
+    "}"                  {
                             column += 1;
                             BEGIN(INITIAL);
                          }
-    "{"                {
+    "{"                  {
                             column += 1;
                             yyerror("Suspicious comment");
                          }
@@ -314,12 +314,19 @@ procedure                {
                          }
 }
 
-'.*'                     {
+'(''|[^'\n])*\n         {
+			    yylloc.first_line = yylineno;
+			    yylloc.first_column = column;
+                            column = 0;
+			    yyerror("Newline in string");
+                         }
+
+'(''|[^'\n])*'           {
                             yylloc.first_line = yylineno;
                             yylloc.first_column = column;
                             column += yyleng;
 			    yylval.str = sym_tab->pool_install(sym_tab->fix_string(yytext));
-                            return T_STRINGCONST;
+			    return T_STRINGCONST;
                          }
 
 [a-z][a-z0-9]*           {
@@ -355,11 +362,11 @@ procedure                {
                          }
 
 \n                       {
-  column = 0;
-}
+                            column = 0;
+                         }
 
-[ ]              {
-  column += 1;
+[ \t]                    {
+                            column += 1;
                          }
 
 <<EOF>>                  yyterminate();
