@@ -330,28 +330,28 @@ procedure                {
                             return T_IDENT;
                          }
 
-[0-9]*\.[0-9]+([eE][-+]?[0-9]+)?           {
-                            yylloc.first_line = yylineno;
-                            yylloc.first_column = column;
-                            column += yyleng;
-			    yylval.rval = atof(yytext);
-                            return T_REALNUM;
-                         }
-
-[0-9]+(\.|[eE][-+]?[0-9]+)           {
-                            yylloc.first_line = yylineno;
-                            yylloc.first_column = column;
-                            column += yyleng;
-			    yylval.rval = atof(yytext);
-                            return T_REALNUM;
-                         }
-
 [0-9]+                   {
                             yylloc.first_line = yylineno;
                             yylloc.first_column = column;
                             column += yyleng;
 			    yylval.ival = atoi(yytext);
                             return T_INTNUM;
+                         }
+
+[0-9]*\.[0-9]+([eE][-+]?[0-9]+)? {
+                            yylloc.first_line = yylineno;
+                            yylloc.first_column = column;
+                            column += yyleng;
+			    yylval.rval = atof(yytext);
+                            return T_REALNUM;
+                         }
+
+[0-9]+\.?(([eE][-+]?)?[0-9]+)? {
+                            yylloc.first_line = yylineno;
+                            yylloc.first_column = column;
+                            column += yyleng;
+			    yylval.rval = atof(yytext);
+                            return T_REALNUM;
                          }
 
 \n                       {
