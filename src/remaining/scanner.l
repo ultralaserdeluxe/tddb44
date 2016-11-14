@@ -329,7 +329,7 @@ procedure                {
 			    return T_STRINGCONST;
                          }
 
-[a-z][a-z0-9]*           {
+[_a-z][_a-z0-9]*           {
                             yylloc.first_line = yylineno;
                             yylloc.first_column = column;
                             column += yyleng;
@@ -365,8 +365,8 @@ procedure                {
                             column = 0;
                          }
 
-[ \t]                    {
-                            column += 1;
+[ \t]+                    {
+                            column += yyleng;
                          }
 
 <<EOF>>                  yyterminate();
