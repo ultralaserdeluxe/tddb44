@@ -549,8 +549,21 @@ sym_index symbol_table::close_scope()
    follows hash links outwards. */
 sym_index symbol_table::lookup_symbol(const pool_index pool_p)
 {
-    /* Your code here */
-    return NULL_SYM;
+  hash_index hash_p = hash(pool_p);
+
+  if(hash_table[hash_p] == NULL_SYM)
+    return 0;
+
+  sym_index sym_p = hash_table[hash_p];
+
+  if(sym_table[sym_p] == NULL)
+    return 0;
+
+  while(sym_table[sym_p]->hash_link){
+    sym_p = sym_table[sym_p]->hash_link;
+  }
+
+  return sym_p;
 }
 
 
@@ -665,6 +678,8 @@ sym_index symbol_table::install_symbol(const pool_index pool_p,
     fatal("Oh shit");
     break;
   }
+
+  hash_table[hash(pool_p)] = sym_pos;
 
   return sym_pos; // Return index to the symbol we just created.
 }
