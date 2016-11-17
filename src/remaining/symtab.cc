@@ -116,7 +116,6 @@ symbol_table::symbol_table()
         procedure_symbol *proc = sym_table[write_sym]->get_procedure_symbol();
         proc->last_parameter = sym_table[int_arg]->get_parameter_symbol();
     }
-
     // Add the trunc(real-arg) function. It returns an integer and takes
     // a real argument.
     sym_index trunc_sym = enter_function(dummy_pos, pool_install(capitalize("trunc")));
@@ -640,8 +639,34 @@ void symbol_table::set_symbol_type(const sym_index sym_p,
 sym_index symbol_table::install_symbol(const pool_index pool_p,
                                        const sym_type tag)
 {
-    /* Your code here */
-    return 0; // Return index to the symbol we just created.
+  switch(tag){
+  case SYM_ARRAY:
+    break;
+  case SYM_FUNC:
+    sym_table[++sym_pos] = new function_symbol(pool_p);
+    break;
+  case SYM_PROC:
+    sym_table[++sym_pos] = new procedure_symbol(pool_p);
+    break;
+  case SYM_VAR:
+    sym_table[++sym_pos] = new variable_symbol(pool_p);
+    break;
+  case SYM_PARAM:
+    sym_table[++sym_pos] = new parameter_symbol(pool_p);
+    break;
+  case SYM_CONST:
+    sym_table[++sym_pos] = new constant_symbol(pool_p);
+    break;
+  case SYM_NAMETYPE:
+    sym_table[++sym_pos] = new nametype_symbol(pool_p);
+    break;
+  default:
+    cout << tag << endl;
+    fatal("Oh shit");
+    break;
+  }
+
+  return sym_pos; // Return index to the symbol we just created.
 }
 
 /* Enter a constant into the symbol table. The value is an integer. The type
@@ -885,8 +910,27 @@ sym_index symbol_table::enter_function(position_information *pos,
 sym_index symbol_table::enter_procedure(position_information *pos,
                                         const pool_index pool_p)
 {
-    /* Your code here */
-    return NULL_SYM;
+  sym_index sym_p = install_symbol(pool_p, SYM_PROC);
+  procedure_symbol *proc = sym_table[sym_p]->get_procedure_symbol();
+
+  // Make sure it's not already been declared.
+  if (proc->tag != SYM_UNDEF) {
+    type_error(pos) << "Redeclaration: " << proc << endl;
+    return sym_p; // returns the original symbol
+  }
+
+  // Set up the function-specific fields.
+  proc->tag = SYM_PROC;
+  // Parameters are added later on.
+  proc->last_parameter = NULL;
+
+  // This will grow as local variables and temporaries are added.
+  proc->ar_size = 0;
+  proc->label_nr = get_next_label();
+
+  sym_table[sym_p] = proc;
+
+  return sym_p;
 }
 
 
