@@ -530,15 +530,14 @@ sym_index symbol_table::current_environment()
 /* Increase the current_level by one. */
 void symbol_table::open_scope()
 {
-    /* Your code here */
+  block_table[++current_level] = sym_pos;
 }
 
 
 /* Decrease the current_level by one. Return sym_index to new environment. */
 sym_index symbol_table::close_scope()
 {
-    /* Your code here */
-    return NULL_SYM;
+    return block_table[--current_level];
 }
 
 
@@ -559,8 +558,15 @@ sym_index symbol_table::lookup_symbol(const pool_index pool_p)
   if(sym_table[sym_p] == NULL)
     return 0;
 
+  /* Follow hash links to current block */
   while(sym_table[sym_p]->hash_link){
     sym_p = sym_table[sym_p]->hash_link;
+    if(sym_p < current_environment()) break;
+  }
+
+  /* Lookup in current block. Follow hash links until match. */
+  while(0){
+    /* TODO */
   }
 
   return sym_p;
@@ -679,7 +685,14 @@ sym_index symbol_table::install_symbol(const pool_index pool_p,
     break;
   }
 
-  hash_table[hash(pool_p)] = sym_pos;
+  /* Set hash links if needed */
+  hash_index hash_p = hash(pool_p);
+
+  if(hash_table[hash_p] != NULL_SYM)
+    sym_table[sym_pos]->hash_link = hash_table[hash_p];
+
+  /* Update hash table with newly installed symbol */
+  hash_table[hash_p] = sym_pos;
 
   return sym_pos; // Return index to the symbol we just created.
 }
