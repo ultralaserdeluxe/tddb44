@@ -537,13 +537,17 @@ void symbol_table::open_scope()
 /* Decrease the current_level by one. Return sym_index to new environment. */
 sym_index symbol_table::close_scope()
 {
-  for(sym_index sym_p = sym_pos; sym_p <= block_table[--current_level] + 1; sym_p--){
+  const sym_index curr_env = current_environment();
+
+  for(sym_index sym_p = sym_pos; sym_p >= curr_env; sym_p--){
     hash_index hash_p = sym_table[sym_p]->back_link;
-    if(hash_table[hash_p] == sym_p)
+    if(hash_table[hash_p] == sym_p){
       hash_table[hash_p] = sym_table[sym_p]->hash_link;
+      sym_table[sym_p]->hash_link = NULL_SYM; /* Should this really be done? */
+    }
   }
 
-  return block_table[current_level];
+  return block_table[--current_level];
 }
 
 
@@ -564,10 +568,10 @@ sym_index symbol_table::lookup_symbol(const pool_index pool_p)
   if(sym_table[sym_p] == NULL)
     return 0;
 
-  while(sym_table[sym_p]->hash_link != NULL_SYM){
-    sym_p = sym_table[sym_p]->hash_link;
+  do{
     if(pool_compare(get_symbol_id(sym_p), pool_p)) break;
-  }
+    sym_p = sym_table[sym_p]->hash_link;
+  }while(sym_p != NULL_SYM);
 
   return sym_p;
 }
@@ -659,7 +663,10 @@ sym_index symbol_table::install_symbol(const pool_index pool_p,
                                        const sym_type tag)
 {
   /* Check current lexical level */
-  /* TODO */
+  hash_index hash_p = hash(pool_p);
+  sym_index sym_p = hash_table[hash_p];
+  if(pool_compare(get_symbol_id(sym_p), pool_p) && sym_p >= current_environment())
+    return sym_p;
 
   switch(tag){
   case SYM_ARRAY:
@@ -693,7 +700,6 @@ sym_index symbol_table::install_symbol(const pool_index pool_p,
   sym_table[sym_pos]->level = current_level;
 
   /* Set default hash link and back_link */
-  hash_index hash_p = hash(pool_p);
   sym_table[sym_pos]->back_link = hash_p;
   sym_table[sym_pos]->hash_link = NULL_SYM;
 
