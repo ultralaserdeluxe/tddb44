@@ -537,7 +537,13 @@ void symbol_table::open_scope()
 /* Decrease the current_level by one. Return sym_index to new environment. */
 sym_index symbol_table::close_scope()
 {
-    return block_table[--current_level];
+  for(sym_index sym_p = sym_pos; sym_p <= block_table[--current_level] + 1; sym_p--){
+    hash_index hash_p = sym_table[sym_p]->back_link;
+    if(hash_table[hash_p] == sym_p)
+      hash_table[hash_p] = sym_table[sym_p]->hash_link;
+  }
+
+  return block_table[current_level];
 }
 
 
@@ -558,15 +564,9 @@ sym_index symbol_table::lookup_symbol(const pool_index pool_p)
   if(sym_table[sym_p] == NULL)
     return 0;
 
-  /* Follow hash links to current block */
-  while(sym_table[sym_p]->hash_link){
+  while(sym_table[sym_p]->hash_link != NULL_SYM){
     sym_p = sym_table[sym_p]->hash_link;
-    if(sym_p < current_environment()) break;
-  }
-
-  /* Lookup in current block. Follow hash links until match. */
-  while(0){
-    /* TODO */
+    if(pool_compare(get_symbol_id(sym_p), pool_p)) break;
   }
 
   return sym_p;
@@ -658,8 +658,12 @@ void symbol_table::set_symbol_type(const sym_index sym_p,
 sym_index symbol_table::install_symbol(const pool_index pool_p,
                                        const sym_type tag)
 {
+  /* Check current lexical level */
+  /* TODO */
+
   switch(tag){
   case SYM_ARRAY:
+    sym_table[++sym_pos] = new array_symbol(pool_p);
     break;
   case SYM_FUNC:
     sym_table[++sym_pos] = new function_symbol(pool_p);
@@ -685,9 +689,15 @@ sym_index symbol_table::install_symbol(const pool_index pool_p,
     break;
   }
 
-  /* Set hash links if needed */
-  hash_index hash_p = hash(pool_p);
+  /* Set current scope */
+  sym_table[sym_pos]->level = current_level;
 
+  /* Set default hash link and back_link */
+  hash_index hash_p = hash(pool_p);
+  sym_table[sym_pos]->back_link = hash_p;
+  sym_table[sym_pos]->hash_link = NULL_SYM;
+
+  /* Set hash links if needed */
   if(hash_table[hash_p] != NULL_SYM)
     sym_table[sym_pos]->hash_link = hash_table[hash_p];
 
@@ -941,18 +951,14 @@ sym_index symbol_table::enter_procedure(position_information *pos,
   sym_index sym_p = install_symbol(pool_p, SYM_PROC);
   procedure_symbol *proc = sym_table[sym_p]->get_procedure_symbol();
 
-  // Make sure it's not already been declared.
   if (proc->tag != SYM_UNDEF) {
     type_error(pos) << "Redeclaration: " << proc << endl;
-    return sym_p; // returns the original symbol
+    return sym_p;
   }
 
-  // Set up the function-specific fields.
   proc->tag = SYM_PROC;
-  // Parameters are added later on.
   proc->last_parameter = NULL;
-
-  // This will grow as local variables and temporaries are added.
+  proc->type = void_type;
   proc->ar_size = 0;
   proc->label_nr = get_next_label();
 
