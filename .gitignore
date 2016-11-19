@@ -1,6 +1,7 @@
 # Project specific
 src/scan/scanner
 src/scan/scanner.cc
+*Makefile.dependencies
 
 # Object files
 *.o
