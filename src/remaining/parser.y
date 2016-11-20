@@ -250,7 +250,7 @@ var_decl        : T_IDENT T_COLON type_id T_SEMICOLON
                     position_information *pos =
                         new position_information(@1.first_line,
                                                  @1.first_column);
-		    sym_tab->enter_variable(pos, $1, sym_tab->get_symbol_type($3->sym_p));
+		    sym_tab->enter_variable(pos, $1, $3->sym_p);
                 }
                 | T_IDENT T_COLON T_ARRAY T_LEFTBRACKET integer T_RIGHTBRACKET T_OF type_id T_SEMICOLON
                 {
