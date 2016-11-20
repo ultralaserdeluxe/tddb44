@@ -539,7 +539,7 @@ sym_index symbol_table::close_scope()
 {
   const sym_index curr_env = current_environment();
 
-  for(sym_index sym_p = sym_pos; sym_p >= curr_env; sym_p--){
+  for(sym_index sym_p = sym_pos; sym_p > curr_env; sym_p--){
     hash_index hash_p = sym_table[sym_p]->back_link;
     if(hash_table[hash_p] == sym_p){
       hash_table[hash_p] = sym_table[sym_p]->hash_link;
