@@ -114,12 +114,10 @@ sym_index ast_stmt_list::type_check()
 sym_index ast_expr_list::type_check()
 {
     /* Your code here */
-  ast_expr_list* list = this;
-
-  while(list != NULL){
-    list->last_expr->type_check();
-    list = list->preceding;
-  }
+  if(preceding != NULL)
+    preceding->type_check();
+  if(last_expr != NULL)
+    last_expr->type_check();
 
   return void_type;
 }
@@ -130,13 +128,11 @@ sym_index ast_expr_list::type_check()
 sym_index ast_elsif_list::type_check()
 {
     /* Your code here */
-  ast_elsif_list* list = this;
-
-  while(list != NULL){
-    list->last_elsif->type_check();
-    list = list->preceding;
-  }
-
+  if(preceding != NULL)
+    preceding->type_check();
+  if(last_elsif != NULL)
+    last_elsif->type_check();
+  
   return void_type;
 }
 
