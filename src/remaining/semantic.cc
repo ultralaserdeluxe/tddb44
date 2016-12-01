@@ -1,6 +1,5 @@
 #include "semantic.hh"
 
-
 semantic *type_checker = new semantic();
 
 
@@ -124,7 +123,14 @@ sym_index ast_expr_list::type_check()
 sym_index ast_elsif_list::type_check()
 {
     /* Your code here */
-    return void_type;
+  ast_elsif_list* list = this;
+
+  while(list != NULL){
+    list->last_elsif->type_check();
+    list = list->preceding;
+  }
+
+  return void_type;
 }
 
 
@@ -143,7 +149,10 @@ sym_index ast_id::type_check()
 sym_index ast_indexed::type_check()
 {
     /* Your code here */
-    return void_type;
+  if(index->type_check() != integer_type)
+    type_error(index->pos) << "shitty index type" << endl;
+
+  return sym_tab->get_symbol(id->sym_p)->type;
 }
 
 
@@ -154,25 +163,27 @@ sym_index ast_indexed::type_check()
 sym_index semantic::check_binop1(ast_binaryoperation *node)
 {
     /* Your code here */
-    return void_type; // You don't have to use this method but it might be convenient
+  if(node->left->type_check() != node->right->type_check())
+    type_error(node->right->pos) << "shitty types in bin op" << endl;
+  return node->left->type_check();
 }
 
 sym_index ast_add::type_check()
 {
     /* Your code here */
-    return void_type;
+  return type_checker->check_binop1(this);
 }
 
 sym_index ast_sub::type_check()
 {
     /* Your code here */
-    return void_type;
+  return type_checker->check_binop1(this);
 }
 
 sym_index ast_mult::type_check()
 {
     /* Your code here */
-    return void_type;
+  return type_checker->check_binop1(this);
 }
 
 /* Divide is a special case, since it always returns real. We make sure the
@@ -180,7 +191,7 @@ sym_index ast_mult::type_check()
 sym_index ast_divide::type_check()
 {
     /* Your code here */
-    return void_type;
+  return type_checker->check_binop1(this);
 }
 
 
@@ -228,31 +239,34 @@ sym_index ast_mod::type_check()
 sym_index semantic::check_binrel(ast_binaryrelation *node)
 {
     /* Your code here */
+  if(node->left->type_check() == node->right->type_check())
+    return integer_type;
+  else
     return void_type;
 }
 
 sym_index ast_equal::type_check()
 {
     /* Your code here */
-    return void_type;
+  return type_checker->check_binrel(this);
 }
 
 sym_index ast_notequal::type_check()
 {
     /* Your code here */
-    return void_type;
+  return type_checker->check_binrel(this);
 }
 
 sym_index ast_lessthan::type_check()
 {
     /* Your code here */
-    return void_type;
+  return type_checker->check_binrel(this);
 }
 
 sym_index ast_greaterthan::type_check()
 {
     /* Your code here */
-    return void_type;
+  return type_checker->check_binrel(this);
 }
 
 
@@ -262,14 +276,42 @@ sym_index ast_greaterthan::type_check()
 sym_index ast_procedurecall::type_check()
 {
     /* Your code here */
+  procedure_symbol* proc = sym_tab->get_symbol(id->sym_p)->get_procedure_symbol();
+  parameter_symbol* formal_parameter = proc->last_parameter;
+  ast_expr_list* actual_parameter = parameter_list;
+  unsigned formal_length = 0;
+  unsigned actual_length = 0;
+
+  while(formal_parameter != NULL){
+    formal_length++;
+    if(actual_parameter == NULL) break;
+    actual_length++;
+    
+    if(formal_parameter->type != actual_parameter->last_expr->type_check()){
+      type_error(id->pos) << "shitty types in procedure" << endl;
+      return void_type;
+    }
+
+    formal_parameter = formal_parameter->preceding;
+    actual_parameter = actual_parameter->preceding;
+  }
+
+  if(actual_parameter != NULL || formal_length != actual_length){
+    type_error(id->pos) << "shitty length in procedure 2";
     return void_type;
+  }
+
+  return void_type;
 }
 
 
 sym_index ast_assign::type_check()
 {
     /* Your code here */
-    return void_type;
+  if(lhs->type_check() != rhs->type_check())
+    type_error(rhs->pos) << "shitty types in assign" << lhs->type_check() << " " << rhs->type_check() << endl;
+
+  return void_type;
 }
 
 
@@ -290,7 +332,10 @@ sym_index ast_while::type_check()
 sym_index ast_if::type_check()
 {
     /* Your code here */
-    return void_type;
+  if(condition->type_check() != integer_type)
+    type_error(condition->pos) << "shitty predicate in if" << endl;
+  
+  return void_type;
 }
 
 
@@ -341,26 +386,59 @@ sym_index ast_return::type_check()
 sym_index ast_functioncall::type_check()
 {
     /* Your code here */
+  function_symbol* func = sym_tab->get_symbol(id->sym_p)->get_function_symbol();
+  parameter_symbol* formal_parameter = func->last_parameter;
+  ast_expr_list* actual_parameter = parameter_list;
+  unsigned formal_length = 0;
+  unsigned actual_length = 0;
+
+  while(formal_parameter != NULL){
+    formal_length++;
+    if(actual_parameter == NULL) break;
+    actual_length++;
+    
+    if(formal_parameter->type != actual_parameter->last_expr->type_check()){
+      type_error(id->pos) << "shitty types in function" << endl;
+      return void_type;
+    }
+
+    formal_parameter = formal_parameter->preceding;
+    actual_parameter = actual_parameter->preceding;
+  }
+
+  if(actual_parameter != NULL || formal_length != actual_length){
+    type_error(id->pos) << "shitty length in procedure 2";
     return void_type;
+  }
+
+  return func->type;
 }
 
 sym_index ast_uminus::type_check()
 {
     /* Your code here */
-    return void_type;
+  return expr->type_check();
 }
 
 sym_index ast_not::type_check()
 {
     /* Your code here */
+  if(expr->type_check() != integer_type){
+    type_error(expr->pos) << "shitty types in not" << endl;
     return void_type;
+  }
+
+  return integer_type;
 }
 
 
 sym_index ast_elsif::type_check()
 {
     /* Your code here */
-    return void_type;
+  if(condition->type_check() != integer_type)
+    type_error(condition->pos) << "shitty predicate in elsif" << endl;
+  
+  return void_type;
 }
 
 
