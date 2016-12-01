@@ -229,6 +229,15 @@ const_decl      : T_IDENT T_EQ integer T_SEMICOLON
                     // constant bar = foo;
                     // ...now, why would anyone want to do that?
                     /* Your code here */
+		  position_information* pos =
+                        new position_information(@1.first_line,
+                                                 @1.first_column);
+		  constant_symbol* constant = sym_tab->get_symbol($3->sym_p)->get_constant_symbol();
+
+		  if(constant->type == integer_type)
+		    sym_tab->enter_constant(pos, $1, constant->type, constant->const_value.ival);
+		  else if(constant->type == real_type)
+		    sym_tab->enter_constant(pos, $1, constant->type, constant->const_value.rval);
                 }
                 
                 ;
