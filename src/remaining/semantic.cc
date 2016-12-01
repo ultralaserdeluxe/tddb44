@@ -114,7 +114,14 @@ sym_index ast_stmt_list::type_check()
 sym_index ast_expr_list::type_check()
 {
     /* Your code here */
-    return void_type;
+  ast_expr_list* list = this;
+
+  while(list != NULL){
+    list->last_expr->type_check();
+    list = list->preceding;
+  }
+
+  return void_type;
 }
 
 
@@ -163,9 +170,23 @@ sym_index ast_indexed::type_check()
 sym_index semantic::check_binop1(ast_binaryoperation *node)
 {
     /* Your code here */
-  if(node->left->type_check() != node->right->type_check())
-    type_error(node->right->pos) << "shitty types in bin op" << endl;
-  return node->left->type_check();
+  sym_index left_type = node->left->type_check();
+  sym_index right_type = node->right->type_check();
+
+  if(left_type == real_type && right_type != real_type){
+    ast_cast* real_cast = new ast_cast(node->right->pos, node->right);
+    node->right = real_cast;
+    right_type = real_type;
+  }else if(left_type != real_type && right_type == real_type){
+    ast_cast* real_cast = new ast_cast(node->left->pos, node->left);
+    node->left = real_cast;
+    left_type = real_type;
+  }
+
+  if(left_type != right_type)
+    type_error(node->pos) << "Shity binop types " << left_type << " " << right_type << endl;
+  
+  return left_type;
 }
 
 sym_index ast_add::type_check()
@@ -191,7 +212,8 @@ sym_index ast_mult::type_check()
 sym_index ast_divide::type_check()
 {
     /* Your code here */
-  return type_checker->check_binop1(this);
+  type_checker->check_binop1(this);
+  return real_type;
 }
 
 
@@ -205,31 +227,35 @@ sym_index ast_divide::type_check()
 sym_index semantic::check_binop2(ast_binaryoperation *node, string s)
 {
     /* Your code here */
-    return void_type;
+  if(node->left->type_check() != integer_type ||
+     node->right->type_check() != integer_type)
+    type_error(node->pos) << "Shitty operands to " << s << endl;
+
+    return integer_type;
 }
 
 sym_index ast_or::type_check()
 {
     /* Your code here */
-    return void_type;
+  return type_checker->check_binop2(this, "OR");
 }
 
 sym_index ast_and::type_check()
 {
     /* Your code here */
-    return void_type;
+  return type_checker->check_binop2(this, "AND");
 }
 
 sym_index ast_idiv::type_check()
 {
     /* Your code here */
-    return void_type;
+  return type_checker->check_binop2(this, "IDIV");
 }
 
 sym_index ast_mod::type_check()
 {
     /* Your code here */
-    return void_type;
+  return type_checker->check_binop2(this, "MOD");
 }
 
 
@@ -239,10 +265,23 @@ sym_index ast_mod::type_check()
 sym_index semantic::check_binrel(ast_binaryrelation *node)
 {
     /* Your code here */
-  if(node->left->type_check() == node->right->type_check())
-    return integer_type;
-  else
-    return void_type;
+  sym_index left_type = node->left->type_check();
+  sym_index right_type = node->right->type_check();
+
+  if(left_type == real_type && right_type != real_type){
+    ast_cast* real_cast = new ast_cast(node->right->pos, node->right);
+    node->right = real_cast;
+    right_type = real_type;
+  }else if(left_type != real_type && right_type == real_type){
+    ast_cast* real_cast = new ast_cast(node->left->pos, node->left);
+    node->left = real_cast;
+    left_type = real_type;
+  }
+
+  if(left_type != right_type)
+    type_error(node->pos) << "Shity binrel types " << left_type << " " << right_type << endl;
+  
+  return integer_type;
 }
 
 sym_index ast_equal::type_check()
@@ -308,9 +347,20 @@ sym_index ast_procedurecall::type_check()
 sym_index ast_assign::type_check()
 {
     /* Your code here */
-  if(lhs->type_check() != rhs->type_check())
-    type_error(rhs->pos) << "shitty types in assign" << lhs->type_check() << " " << rhs->type_check() << endl;
+  sym_index left_type = lhs->type_check();
+  sym_index right_type = rhs->type_check();
 
+  if(left_type == real_type && right_type == integer_type){
+    ast_cast* real_cast = new ast_cast(rhs->pos, rhs);
+    rhs = real_cast;
+    right_type = real_type;
+  }else if(left_type == integer_type && right_type == real_type){
+    type_error(pos) << "Shitty reals cant be assigned to integers." << endl;
+  }
+
+  if(left_type != right_type)
+    type_error(pos) << "Shity assign types " << left_type << " " << right_type << endl;
+  
   return void_type;
 }
 
