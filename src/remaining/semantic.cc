@@ -380,6 +380,15 @@ sym_index ast_if::type_check()
     /* Your code here */
   if(condition->type_check() != integer_type)
     type_error(condition->pos) << "shitty predicate in if" << endl;
+
+  if(body != NULL)
+    body->type_check();
+
+  if(elsif_list != NULL)
+    elsif_list->type_check();
+
+  if(else_body != NULL)
+    else_body->type_check();
   
   return void_type;
 }
