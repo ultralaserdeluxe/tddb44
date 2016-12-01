@@ -116,10 +116,13 @@ sym_index ast_expr_list::type_check()
     /* Your code here */
   if(preceding != NULL)
     preceding->type_check();
-  if(last_expr != NULL)
-    last_expr->type_check();
 
-  return void_type;
+  if(last_expr != NULL){
+    cout << "REturning shit" << endl;
+    return last_expr->type_check();
+  }else{
+    return void_type;
+  }
 }
 
 
@@ -181,6 +184,8 @@ sym_index semantic::check_binop1(ast_binaryoperation *node)
 
   if(left_type != right_type)
     type_error(node->pos) << "Shity binop types " << left_type << " " << right_type << endl;
+
+  node->type = left_type;
   
   return left_type;
 }
@@ -208,7 +213,20 @@ sym_index ast_mult::type_check()
 sym_index ast_divide::type_check()
 {
     /* Your code here */
-  type_checker->check_binop1(this);
+  sym_index left_type = left->type_check();
+  sym_index right_type = right->type_check();
+
+  if(left_type != real_type){
+    ast_cast* real_cast = new ast_cast(left->pos, left);
+    left = real_cast;
+  }
+
+  if(right_type != real_type){
+    ast_cast* real_cast = new ast_cast(right->pos, right);
+    right = real_cast;
+  }
+
+  this->type = real_type;
   return real_type;
 }
 
@@ -227,7 +245,9 @@ sym_index semantic::check_binop2(ast_binaryoperation *node, string s)
      node->right->type_check() != integer_type)
     type_error(node->pos) << "Shitty operands to " << s << endl;
 
-    return integer_type;
+  node->type = integer_type;
+
+  return integer_type;
 }
 
 sym_index ast_or::type_check()
