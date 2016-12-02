@@ -662,10 +662,8 @@ void symbol_table::set_symbol_type(const sym_index sym_p,
 sym_index symbol_table::install_symbol(const pool_index pool_p,
                                        const sym_type tag)
 {
-  /* Check current lexical level */
-  hash_index hash_p = hash(pool_p);
-  sym_index sym_p = hash_table[hash_p];
-  if(pool_compare(get_symbol_id(sym_p), pool_p) && sym_p >= current_environment())
+  sym_index sym_p = lookup_symbol(pool_p);
+  if(sym_p != NULL_SYM)
     return sym_p;
 
   switch(tag){
@@ -700,6 +698,7 @@ sym_index symbol_table::install_symbol(const pool_index pool_p,
   sym_table[sym_pos]->level = current_level;
 
   /* Set default hash link and back_link */
+  hash_index hash_p = hash(pool_p);
   sym_table[sym_pos]->back_link = hash_p;
   sym_table[sym_pos]->hash_link = NULL_SYM;
 
