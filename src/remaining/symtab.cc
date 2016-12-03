@@ -561,12 +561,12 @@ sym_index symbol_table::lookup_symbol(const pool_index pool_p)
   hash_index hash_p = hash(pool_p);
 
   if(hash_table[hash_p] == NULL_SYM)
-    return 0;
+    return NULL_SYM;
 
   sym_index sym_p = hash_table[hash_p];
 
   if(sym_table[sym_p] == NULL)
-    return 0;
+    return NULL_SYM;
 
   do{
     if(pool_compare(get_symbol_id(sym_p), pool_p)) break;
@@ -663,7 +663,7 @@ sym_index symbol_table::install_symbol(const pool_index pool_p,
                                        const sym_type tag)
 {
   sym_index sym_p = lookup_symbol(pool_p);
-  if(sym_p != NULL_SYM)
+  if(sym_p != NULL_SYM && sym_table[sym_p]->level == current_level)
     return sym_p;
 
   switch(tag){
