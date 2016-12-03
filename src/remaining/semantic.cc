@@ -371,12 +371,9 @@ sym_index ast_assign::type_check()
     rhs = real_cast;
     right_type = real_type;
   }else if(left_type == integer_type && right_type == real_type){
-    type_error(pos) << "Shitty reals cant be assigned to integers." << endl;
+    type_error(rhs->pos) << "Can't assign a real value to an integer variable." << endl;
   }
 
-  if(left_type != right_type)
-    type_error(pos) << "Shity assign types " << left_type << " " << right_type << endl;
-  
   return void_type;
 }
 
