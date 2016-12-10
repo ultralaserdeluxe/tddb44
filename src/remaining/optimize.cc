@@ -156,6 +156,15 @@ ast_expression *ast_optimizer::fold_constants(ast_expression *node)
   }else if(binop->left->get_ast_real()){
     lval = binop->left->get_ast_real()->value;
     create_real = true;
+  }else if(binop->left->get_ast_id()){
+    sym_index sym_p = binop->left->get_ast_id()->sym_p;
+    symbol* sym = sym_tab->get_symbol(sym_p);
+    if(sym->tag != SYM_CONST) return binop;
+    constant_value const_value = sym->get_constant_symbol()->const_value;
+    if(sym_tab->get_symbol_type(sym_p) == integer_type)
+      lval = const_value.ival;
+    else
+      lval = const_value.rval;
   }else{
     return binop;
   }
@@ -167,6 +176,15 @@ ast_expression *ast_optimizer::fold_constants(ast_expression *node)
   }else if(binop->right->get_ast_real()){
     rval = binop->right->get_ast_real()->value;
     create_real = true;
+  }else if(binop->right->get_ast_id()){
+    sym_index sym_p = binop->right->get_ast_id()->sym_p;
+    symbol* sym = sym_tab->get_symbol(sym_p);
+    if(sym->tag != SYM_CONST) return binop;
+    constant_value const_value = sym->get_constant_symbol()->const_value;
+    if(sym_tab->get_symbol_type(sym_p) == integer_type)
+      rval = const_value.ival;
+    else
+      rval = const_value.rval;
   }else{
     return binop;
   }
@@ -180,10 +198,10 @@ ast_expression *ast_optimizer::fold_constants(ast_expression *node)
     result = lval - rval;
     break;
   case AST_OR:
-    result = (long)lval | (long)rval;
+    result = (long)lval || (long)rval;
     break;
   case AST_AND:
-    result = (long)lval & (long)rval;
+    result = (long)lval && (long)rval;
     break;
   case AST_MULT:
     result = lval * rval;
