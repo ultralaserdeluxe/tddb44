@@ -42,7 +42,24 @@ bool semantic::chk_param(ast_id *env,
                         ast_expr_list *actuals)
 {
     /* Your code here */
+  if(formals == NULL && actuals == NULL){
     return true;
+  }else if(formals != NULL && actuals == NULL){
+    type_error(env->pos) <<
+      "More formal than actual parameters." << endl;
+    return false;
+  }else if(formals == NULL && actuals != NULL){
+    type_error(actuals->pos) <<
+      "More actual than formal parameters." << endl;
+    return  false;
+  }
+
+  if(formals->type != actuals->last_expr->type_check()){
+    type_error(actuals->pos) << "Type discrepancy between formal and actual parameters." << endl;
+    return false;
+  }else{
+    return true && chk_param(env, formals->preceding, actuals->preceding);
+  }
 }
 
 
@@ -51,6 +68,14 @@ void semantic::check_parameters(ast_id *call_id,
                                 ast_expr_list *param_list)
 {
     /* Your code here */
+  symbol* sym = sym_tab->get_symbol(call_id->sym_p);
+  parameter_symbol* formals = NULL;
+  if(sym->tag == SYM_PROC)
+    formals = sym->get_procedure_symbol()->last_parameter;
+  else
+    formals = sym->get_function_symbol()->last_parameter;
+
+  chk_param(call_id, formals, param_list);
 }
 
 
@@ -331,31 +356,7 @@ sym_index ast_greaterthan::type_check()
 sym_index ast_procedurecall::type_check()
 {
     /* Your code here */
-  procedure_symbol* proc = sym_tab->get_symbol(id->sym_p)->get_procedure_symbol();
-  parameter_symbol* formal_parameter = proc->last_parameter;
-  ast_expr_list* actual_parameter = parameter_list;
-  unsigned formal_length = 0;
-  unsigned actual_length = 0;
-
-  while(formal_parameter != NULL){
-    formal_length++;
-    if(actual_parameter == NULL) break;
-    actual_length++;
-    
-    if(formal_parameter->type != actual_parameter->last_expr->type_check()){
-      type_error(id->pos) << "shitty types in procedure" << endl;
-      return void_type;
-    }
-
-    formal_parameter = formal_parameter->preceding;
-    actual_parameter = actual_parameter->preceding;
-  }
-
-  if(actual_parameter != NULL || formal_length != actual_length){
-    type_error(id->pos) << "shitty length in procedure 2";
-    return void_type;
-  }
-
+  type_checker->check_parameters(id, parameter_list);
   return void_type;
 }
 
@@ -459,29 +460,7 @@ sym_index ast_functioncall::type_check()
 {
     /* Your code here */
   function_symbol* func = sym_tab->get_symbol(id->sym_p)->get_function_symbol();
-  parameter_symbol* formal_parameter = func->last_parameter;
-  ast_expr_list* actual_parameter = parameter_list;
-  unsigned formal_length = 0;
-  unsigned actual_length = 0;
-
-  while(formal_parameter != NULL){
-    formal_length++;
-    if(actual_parameter == NULL) break;
-    actual_length++;
-    
-    if(formal_parameter->type != actual_parameter->last_expr->type_check()){
-      type_error(id->pos) << "shitty types in function" << endl;
-      return void_type;
-    }
-
-    formal_parameter = formal_parameter->preceding;
-    actual_parameter = actual_parameter->preceding;
-  }
-
-  if(actual_parameter != NULL || formal_length != actual_length){
-    type_error(id->pos) << "shitty length in procedure 2";
-    return void_type;
-  }
+  type_checker->check_parameters(id, parameter_list);
 
   return func->type;
 }
