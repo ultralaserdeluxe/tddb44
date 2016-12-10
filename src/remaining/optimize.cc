@@ -24,6 +24,8 @@ void ast_optimizer::do_optimize(ast_stmt_list *body)
    ie, eligible for constant folding. */
 bool ast_optimizer::is_binop(ast_expression *node)
 {
+  if(node == NULL) return false;
+
     switch (node->tag) {
     case AST_ADD:
     case AST_SUB:
@@ -82,12 +84,12 @@ void ast_binaryrelation::optimize()
 /* Optimize a statement list. */
 void ast_stmt_list::optimize()
 {
-    if (preceding != NULL) {
-        preceding->optimize();
-    }
-    if (last_stmt != NULL) {
-        last_stmt->optimize();
-    }
+  if (preceding != NULL) {
+    preceding->optimize();
+  }
+  if (last_stmt != NULL) {
+    last_stmt->optimize();
+  }
 }
 
 
@@ -95,6 +97,12 @@ void ast_stmt_list::optimize()
 void ast_expr_list::optimize()
 {
     /* Your code here */
+  if (preceding != NULL) {
+    preceding->optimize();
+  }
+  if (optimizer->is_binop(last_expr)) {
+    last_expr = optimizer->fold_constants(last_expr);
+  }
 }
 
 
@@ -102,6 +110,12 @@ void ast_expr_list::optimize()
 void ast_elsif_list::optimize()
 {
     /* Your code here */
+  if (preceding != NULL) {
+    preceding->optimize();
+  }
+  if (last_elsif != NULL) {
+    last_elsif->optimize();
+  }
 }
 
 
@@ -116,6 +130,8 @@ void ast_id::optimize()
 void ast_indexed::optimize()
 {
     /* Your code here */
+  if(optimizer->is_binop(index))
+    index = optimizer->fold_constants(index);
 }
 
 
@@ -126,7 +142,71 @@ void ast_indexed::optimize()
 ast_expression *ast_optimizer::fold_constants(ast_expression *node)
 {
     /* Your code here */
+  ast_binaryoperation* binop = node->get_ast_binaryoperation();
+
+  if(is_binop(binop->left))
+    binop->left = fold_constants(binop->left);
+  if(is_binop(binop->right))
+    binop->right = fold_constants(binop->right);
+
+  bool create_real = false;
+  double lval;
+  if(binop->left->get_ast_integer()){
+    lval = binop->left->get_ast_integer()->value;
+  }else if(binop->left->get_ast_real()){
+    lval = binop->left->get_ast_real()->value;
+    create_real = true;
+  }else{
+    return binop;
+  }
+
+
+  double rval;
+  if(binop->right->get_ast_integer()){
+    rval = binop->right->get_ast_integer()->value;
+  }else if(binop->right->get_ast_real()){
+    rval = binop->right->get_ast_real()->value;
+    create_real = true;
+  }else{
+    return binop;
+  }
+
+  double result;
+  switch (binop->tag) {
+  case AST_ADD:
+    result = lval + rval;
+    break;
+  case AST_SUB:
+    result = lval - rval;
+    break;
+  case AST_OR:
+    result = (long)lval | (long)rval;
+    break;
+  case AST_AND:
+    result = (long)lval & (long)rval;
+    break;
+  case AST_MULT:
+    result = lval * rval;
+    break;
+  case AST_DIVIDE:
+    result = lval / rval;
+    create_real = true;
+    break;
+  case AST_IDIV:
+    result = (int)lval / (int)rval;
+    break;
+  case AST_MOD:
+    result = (int)lval % (int)rval;
+    break;
+  default:
+    fatal("Error in fold constants");
     return NULL;
+  }
+
+  if(create_real)
+    return new ast_real(binop->pos, result);
+  else
+    return new ast_integer(binop->pos, (long)result);
 }
 
 /* All the binary operations should already have been detected in their parent
@@ -177,21 +257,37 @@ void ast_mod::optimize()
 void ast_equal::optimize()
 {
     /* Your code here */
+  if(optimizer->is_binop(left))
+    left = optimizer->fold_constants(left);
+  if(optimizer->is_binop(right))
+    right = optimizer->fold_constants(right);
 }
 
 void ast_notequal::optimize()
 {
     /* Your code here */
+  if(optimizer->is_binop(left))
+    left = optimizer->fold_constants(left);
+  if(optimizer->is_binop(right))
+    right = optimizer->fold_constants(right);
 }
 
 void ast_lessthan::optimize()
 {
     /* Your code here */
+  if(optimizer->is_binop(left))
+    left = optimizer->fold_constants(left);
+  if(optimizer->is_binop(right))
+    right = optimizer->fold_constants(right);
 }
 
 void ast_greaterthan::optimize()
 {
     /* Your code here */
+  if(optimizer->is_binop(left))
+    left = optimizer->fold_constants(left);
+  if(optimizer->is_binop(right))
+    right = optimizer->fold_constants(right);
 }
 
 
@@ -201,52 +297,80 @@ void ast_greaterthan::optimize()
 void ast_procedurecall::optimize()
 {
     /* Your code here */
+  if(parameter_list != NULL)
+    parameter_list->optimize();
 }
 
 
 void ast_assign::optimize()
 {
     /* Your code here */
+  if(optimizer->is_binop(rhs))
+    rhs = optimizer->fold_constants(rhs);
 }
 
 
 void ast_while::optimize()
 {
     /* Your code here */
+  condition->optimize();
+  if(optimizer->is_binop(condition))
+    condition = optimizer->fold_constants(condition);
+  body->optimize();
 }
 
 
 void ast_if::optimize()
 {
     /* Your code here */
+  condition->optimize();
+  if(optimizer->is_binop(condition))
+    condition = optimizer->fold_constants(condition);
+  body->optimize();
+  if(elsif_list != NULL)
+    elsif_list->optimize();
+  if(else_body != NULL)
+    else_body->optimize();
 }
 
 
 void ast_return::optimize()
 {
     /* Your code here */
+  if(optimizer->is_binop(value))
+    value = optimizer->fold_constants(value);
 }
 
 
 void ast_functioncall::optimize()
 {
     /* Your code here */
+  if(parameter_list != NULL)
+    parameter_list->optimize();
 }
 
 void ast_uminus::optimize()
 {
     /* Your code here */
+  if(optimizer->is_binop(expr))
+    expr = optimizer->fold_constants(expr);
 }
 
 void ast_not::optimize()
 {
     /* Your code here */
+  if(optimizer->is_binop(expr))
+    expr = optimizer->fold_constants(expr);
 }
 
 
 void ast_elsif::optimize()
 {
     /* Your code here */
+  condition->optimize();
+  if(optimizer->is_binop(condition))
+    condition = optimizer->fold_constants(condition);
+  body->optimize();
 }
 
 
