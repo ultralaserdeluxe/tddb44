@@ -388,7 +388,8 @@ void ast_elsif::optimize()
   condition->optimize();
   if(optimizer->is_binop(condition))
     condition = optimizer->fold_constants(condition);
-  body->optimize();
+  if(body != NULL)
+    body->optimize();
 }
 
 
