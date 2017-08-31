@@ -128,33 +128,37 @@ sym_index ast_elsif_list::generate_quads(quad_list &q)
 
 sym_index ast_elsif::generate_quads(quad_list &q)
 {
-    USE_Q;
-    /* Your code here */
-    return NULL_SYM;
+  /* Your code here */
+  sym_index temp_var = condition->generate_quads(q);
+  body->generate_quads(q);
+  return temp_var;
 }
 
 
 sym_index ast_id::generate_quads(quad_list &q)
 {
-    USE_Q;
-    /* Your code here */
-    return NULL_SYM;
+  /* Your code here */
+  return sym_p;
 }
 
 
 sym_index ast_integer::generate_quads(quad_list &q)
 {
-    USE_Q;
-    /* Your code here */
-    return NULL_SYM;
+  /* Your code here */
+  cout << "ast_integer " << type <<  " " << this << endl;
+  sym_index temp_var = sym_tab->gen_temp_var(type);
+  q += new quadruple(q_iload, value, NULL_SYM, temp_var);
+  cout << &q;
+  return temp_var;
 }
 
 
 sym_index ast_real::generate_quads(quad_list &q)
 {
-    USE_Q;
-    /* Your code here */
-    return NULL_SYM;
+  /* Your code here */
+  sym_index temp_var = sym_tab->gen_temp_var(type);
+  q += new quadruple(q_rload, value, NULL_SYM, temp_var);
+  return temp_var;
 }
 
 
@@ -166,114 +170,150 @@ sym_index ast_real::generate_quads(quad_list &q)
    do so, we'd have to pass on more arguments than we are to the two
    do_binary* functions above. Why? */
 
+sym_index do_unary(quad_list &q, ast_expression* expr, quad_op_type quad_op)
+{
+  sym_index expression = expr->generate_quads(q);
+  sym_index address = sym_tab->gen_temp_var(expr->type);
+  q += new quadruple(quad_op, expression, NULL_SYM, address);
+  return expression;
+}
+
 sym_index ast_not::generate_quads(quad_list &q)
 {
-    USE_Q;
-    /* Your code here */
-    return NULL_SYM;
+  /* Your code here */
+  return do_unary(q, expr, q_inot);
 }
 
 
 sym_index ast_uminus::generate_quads(quad_list &q)
 {
-    USE_Q;
-    /* Your code here */
-    return NULL_SYM;
+  /* Your code here */
+  if(expr->type == integer_type)
+    return do_unary(q, expr, q_iuminus);
+  else
+    return do_unary(q, expr, q_ruminus);
 }
 
 
 sym_index ast_cast::generate_quads(quad_list &q)
 {
-    USE_Q;
-    /* Your code here */
-    return NULL_SYM;
+  /* Your code here */
+  return do_unary(q, expr, q_itor);
 }
 
 
+sym_index do_binaryoperation(quad_list &q, ast_binaryoperation* binop, quad_op_type quad_op)
+{
+  cout << "binary op" << endl;
+  sym_index left_expr = binop->left->generate_quads(q);
+  sym_index right_expr = binop->right->generate_quads(q);
+  sym_index address = sym_tab->gen_temp_var(sym_tab->get_symbol_type(left_expr));
+  q += new quadruple(quad_op, left_expr, right_expr, address);
+  return address;
+}
+
 sym_index ast_add::generate_quads(quad_list &q)
 {
-    USE_Q;
-    /* Your code here */
-    return NULL_SYM;
+  /* Your code here */
+  if(left->type == integer_type)
+    return do_binaryoperation(q, this, q_iplus);
+  else
+    return do_binaryoperation(q, this, q_rplus);
 }
 
 sym_index ast_sub::generate_quads(quad_list &q)
 {
-    USE_Q;
-    /* Your code here */
-    return NULL_SYM;
+  /* Your code here */
+  if(left->type == integer_type)
+    return do_binaryoperation(q, this, q_iminus);
+  else
+    return do_binaryoperation(q, this, q_rminus);
 }
 
 sym_index ast_mult::generate_quads(quad_list &q)
 {
-    USE_Q;
-    /* Your code here */
-    return NULL_SYM;
+  /* Your code here */
+  if(left->type == integer_type)
+    return do_binaryoperation(q, this, q_imult);
+  else
+    return do_binaryoperation(q, this, q_rmult);
 }
 
 sym_index ast_divide::generate_quads(quad_list &q)
 {
-    USE_Q;
-    /* Your code here */
-    return NULL_SYM;
+  /* Your code here */
+  return do_binaryoperation(q, this, q_rdivide);
 }
 
 sym_index ast_idiv::generate_quads(quad_list &q)
 {
-    USE_Q;
-    /* Your code here */
-    return NULL_SYM;
+  /* Your code here */
+  return do_binaryoperation(q, this, q_idivide);
 }
 
 sym_index ast_mod::generate_quads(quad_list &q)
 {
-    USE_Q;
-    /* Your code here */
-    return NULL_SYM;
+  /* Your code here */
+  return do_binaryoperation(q, this, q_imod);
 }
 
 sym_index ast_or::generate_quads(quad_list &q)
 {
-    USE_Q;
-    /* Your code here */
-    return NULL_SYM;
+  /* Your code here */
+  return do_binaryoperation(q, this, q_ior);
 }
 
 sym_index ast_and::generate_quads(quad_list &q)
 {
-    USE_Q;
-    /* Your code here */
-    return NULL_SYM;
+  /* Your code here */
+  return do_binaryoperation(q, this, q_iand);
 }
 
+
+sym_index do_binaryrelation(quad_list &q, ast_binaryrelation* binrel, quad_op_type quad_op)
+{
+  sym_index left_expr = binrel->left->generate_quads(q);
+  sym_index right_expr = binrel->right->generate_quads(q);
+  sym_index address = sym_tab->gen_temp_var(integer_type);
+  q += new quadruple(quad_op, left_expr, right_expr, address);
+  return address;  
+}
 
 
 sym_index ast_equal::generate_quads(quad_list &q)
 {
-    USE_Q;
     /* Your code here */
-    return NULL_SYM;
+  if(left->type == integer_type)
+    return do_binaryrelation(q, this, q_ieq);
+  else
+    return do_binaryrelation(q, this, q_req);
 }
 
 sym_index ast_notequal::generate_quads(quad_list &q)
 {
-    USE_Q;
-    /* Your code here */
-    return NULL_SYM;
+  /* Your code here */
+  if(left->type == integer_type)
+    return do_binaryrelation(q, this, q_ine);
+  else
+    return do_binaryrelation(q, this, q_rne);
 }
 
 sym_index ast_lessthan::generate_quads(quad_list &q)
 {
-    USE_Q;
-    /* Your code here */
-    return NULL_SYM;
+  /* Your code here */
+  if(left->type == integer_type)
+    return do_binaryrelation(q, this, q_ilt);
+  else
+    return do_binaryrelation(q, this, q_rlt);
 }
 
 sym_index ast_greaterthan::generate_quads(quad_list &q)
 {
-    USE_Q;
-    /* Your code here */
-    return NULL_SYM;
+  /* Your code here */
+  if(left->type == integer_type)
+    return do_binaryrelation(q, this, q_igt);
+  else
+    return do_binaryrelation(q, this, q_rgt);
 }
 
 
@@ -299,13 +339,15 @@ void ast_indexed::generate_assignment(quad_list &q, sym_index rhs)
 {
     sym_index index_pos = index->generate_quads(q);
     sym_index address = sym_tab->gen_temp_var(integer_type);
-
+    cout << "type " << this->type << endl;
+    cout << "id " << id->type << endl;
+    cout << this << endl;
     q += new quadruple(q_lindex, id->sym_p, index_pos, address);
 
-    if (type == integer_type) {
-        q += new quadruple(q_istore, rhs, NULL_SYM, address);
-    } else if (type == real_type) {
-        q += new quadruple(q_rstore, rhs, NULL_SYM, address);
+    if (id->type == integer_type) {
+        q += new quadruple(q_iassign, rhs, NULL_SYM, address);
+    } else if (id->type == real_type) {
+        q += new quadruple(q_rassign, rhs, NULL_SYM, address);
     } else {
         fatal("Illegal type in ast_indexed::generate_assignment()");
     }
@@ -315,7 +357,9 @@ void ast_indexed::generate_assignment(quad_list &q, sym_index rhs)
 /* Statements of various kinds. */
 sym_index ast_assign::generate_quads(quad_list &q)
 {
+  cout << "ast_assign begin" << endl;
     sym_index right_pos = rhs->generate_quads(q);
+    cout << "ast_assign right_pos " << right_pos << endl;
     lhs->generate_assignment(q, right_pos);
     return NULL_SYM;
 }
@@ -423,9 +467,21 @@ sym_index ast_return::generate_quads(quad_list &q)
 /* Generate quads for an array reference. */
 sym_index ast_indexed::generate_quads(quad_list &q)
 {
-    USE_Q;
     /* Your code here */
-    return NULL_SYM;
+    sym_index index_pos = index->generate_quads(q);
+    sym_index address = 0;
+
+    cout << "ast_indexed " << index_pos << endl;
+    if (id->type == integer_type) {
+      address = sym_tab->gen_temp_var(integer_type);
+      q += new quadruple(q_irindex, id->sym_p, index_pos, address);
+    } else if (id->type == real_type) {
+      address = sym_tab->gen_temp_var(real_type);
+      q += new quadruple(q_rrindex, id->sym_p, index_pos, address);
+    } else {
+        fatal("Illegal type in ast_indexed::generate_quads()");
+    }
+    return address;
 }
 
 
