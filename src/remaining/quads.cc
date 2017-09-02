@@ -480,9 +480,15 @@ sym_index ast_if::generate_quads(quad_list &q)
 /* Generate quads for a return statement. */
 sym_index ast_return::generate_quads(quad_list &q)
 {
-    USE_Q;
-    /* Your code here */
-    return NULL_SYM;
+  /* Your code here */
+  sym_index result = value->generate_quads(q);
+  if(sym_tab->get_symbol_type(result) == integer_type)
+    q += new quadruple(q_ireturn, q.last_label, result, NULL_SYM);
+  else if(sym_tab->get_symbol_type(result) == real_type)
+    q += new quadruple(q_rreturn, q.last_label, result, NULL_SYM);
+  else
+    fatal("Illegal type in ast_return::generate_quads()");
+  return NULL_SYM;
 }
 
 
