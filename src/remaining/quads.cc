@@ -173,7 +173,7 @@ sym_index do_unary(quad_list &q, ast_expression* expr, quad_op_type quad_op)
   sym_index expression = expr->generate_quads(q);
   sym_index address = sym_tab->gen_temp_var(expr->type);
   q += new quadruple(quad_op, expression, NULL_SYM, address);
-  return expression;
+  return address;
 }
 
 sym_index ast_not::generate_quads(quad_list &q)
