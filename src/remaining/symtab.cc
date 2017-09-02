@@ -171,10 +171,9 @@ long symbol_table::get_next_label()
 sym_index symbol_table::gen_temp_var(sym_index type)
 {
   /* Your code here */
-  cout << "gen_temp_var " << type << endl;
   if(type == integer_type || type == real_type){
-    char temp_name[10];
-    sprintf(&temp_name[0], "$%i", (int)sym_pos);
+    char temp_name[8];
+    sprintf(&temp_name[0], "$%-7ld", ++temp_nr);
     pool_index pool_p = pool_install(&temp_name[0]);
     return enter_variable(pool_p, type);
   }
